@@ -59,16 +59,16 @@ List<ResourceDictionary> dictionaryList = new List<ResourceDictionary>();
 ```
 # 方法2：使用.resx资源文件
 这种方式和Winform支持多国语言保持一致，相对较容易实现，新增支持语言需要重新编译程序，所有的.resx文件必须放在同一个主程序集中。
-1. 添加字符串  
+1. 添加字符串 
 在资源文件Resources.resx中添加字符串资源，并将访问修饰符设置为Public。
 2. 在程序中使用资源文件  
-> .xaml文件，引入名称空间：`xmlns:props="clr-namespace:LocalizationDemo.Properties"；`  
+> .xaml文件，引入名称空间：`xmlns:props="clr-namespace:LocalizationDemo.Properties"；`
 > 使用方式：`Text="{x:Static props:Resources.TblText}"`
 
 > .cs文件，使用方式：`string s = Properties.Resources.MsgShowTime;`  
-> 3.  新增语言资源文件  
+> 3.  新增语言资源文件 
 > 以新增简体中文为例，复制资源文件Resources.resx，重命名为Resources.zh-CN.resx，将值翻译为中文保存。
-> 4. 设置程序运行语言环境  
+> 4. 设置程序运行语言环境 
 > ` LocalizationDemo.Properties.Resources.Culture = new CultureInfo("zh-CN");`
 
 参考：<https://www.cnblogs.com/horan/archive/2012/04/20/wpf-multilanguage.html>
