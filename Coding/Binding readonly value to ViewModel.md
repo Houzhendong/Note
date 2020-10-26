@@ -1,4 +1,4 @@
-
+ActualWidth等只读属性不可以直接绑定到ViewModel，可以采用依赖属性的方法来绑定，例如：
 
 ```c#
 class SizeObserver
@@ -10,8 +10,7 @@ class SizeObserver
         return (bool)elem.GetValue(ObserveProperty);
     }
 
-    public static void SetObserve(
-      FrameworkElement elem, bool value)
+    public static void SetObserve(FrameworkElement elem, bool value)
     {
         elem.SetValue(ObserveProperty, value);
     }
@@ -20,8 +19,7 @@ class SizeObserver
         DependencyProperty.RegisterAttached("Observe", typeof(bool), typeof(SizeObserver),
         new UIPropertyMetadata(false, OnObserveChanged));
 
-    static void OnObserveChanged(
-      DependencyObject depObj, DependencyPropertyChangedEventArgs e)
+    static void OnObserveChanged(DependencyObject depObj, DependencyPropertyChangedEventArgs e)
     {
         FrameworkElement elem = depObj as FrameworkElement;
         if (elem == null)
@@ -88,3 +86,5 @@ class SizeObserver
     #endregion
 }
 ```
+
+注意：绑定ViewModel的属性时，用OneWayReserve绑定会导致绑定无效，要用TwoWay绑定，但是本质上绑定的还是一个只读属性，所以ViewModel的属性在声明时不要调用OnPropertyChanged方法，这样可以实现单向绑定的目的
