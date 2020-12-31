@@ -5,4 +5,6 @@ this.DispatcherUnhandledException += App_DispatcherUnhandledException;
 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 //Task线程内未捕获异常处理事件
 TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+//未捕获的线程异常
+Application.ThreadException += UnhandledWinFormException;
 ```
