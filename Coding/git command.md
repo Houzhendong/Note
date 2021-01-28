@@ -29,3 +29,13 @@
 从远程克隆代码
 
 > `git clone <远程地址> <下载路径>`
+
+初始化一个新的仓库
+
+> `git init`
+
+设置UserName Email
+
+> `git config --global user.name "<用户名>"`
+>
+> `git config -- global user.email "<Email>"`
