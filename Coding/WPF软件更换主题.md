@@ -21,16 +21,11 @@
 2. 新建一个App类提供更换主题方法
 
    ```c#
-   public class App : Application
+   public class Theme
    {
-       ResourceDictionary ThemeDictionary => Resource.MergedDictionaries[0];
+       ResourceDictionary ThemeDictionary => Application.Current.Resource.MergedDictionaries[0];
        
-       public App()
-       {
-           InitializeComponent();
-       }
-       
-       public void ChangeTheme(string url)
+       public void ChangeTheme(Uri url)
        {
            ThemeDictionary.MergedDictionaries.Clear();
            ThemeDictionary.MergedDictionaries.Add(new ResourceDictionary(){Source = url});
@@ -40,7 +35,12 @@
 
    因为更换时要清空MergedDictionaries，所以包含主题的ResourceDictionary要单独写在一个MergedDictionaries里。
 
-   
+3. 运行中切换资源文件
+
+   ```c#
+   var app = new AppTheme(); 
+   app.ChangeTheme(new System.Uri("ThemeUri.xaml",UriKind.RelativeOrAbsolute));
+   ```
 
    正常编写xaml时使用style时使用DynamicResource即可
 
