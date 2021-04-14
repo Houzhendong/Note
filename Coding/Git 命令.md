@@ -42,7 +42,7 @@
 
 > `git config --global user.name "<用户名>"`
 >
-> `git config -- global user.email "<Email>"`
+> `git config --global user.email "<Email>"`
 
 回退版本
 > `git reset HEAD^`  回退到上一个版本
