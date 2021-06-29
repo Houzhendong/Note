@@ -1,5 +1,5 @@
 1. launch文件配置
-```
+```json
 {
     // 使用 IntelliSense 了解相关属性。 
     // 悬停以查看现有属性的描述。
@@ -43,7 +43,7 @@
 ```
 
 2. Task文件配置
-```
+```json
 {
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format

@@ -10,9 +10,13 @@
 
 3. window7 或更新版本
 
-4. 确认安装了Visual Studio 的C++桌面开发环境（这两项一定要勾选！  windows 10 SDK 版本可以不一样）
+4. VS 英语语言包（必须安装）
+
+5. 确认安装了Visual Studio 的C++桌面开发环境（这两项一定要勾选！  windows 10 SDK 版本可以不一样）
 
    ![Configured C++ features](https://i.loli.net/2021/01/28/D9lWLzVoa5fZrqp.png)
+
+   
 
 #### 3. 开始安装
 
