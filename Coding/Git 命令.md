@@ -49,7 +49,7 @@
 
 > `git restore <fileName>` 将filename文件恢复到未修改状态
 
-> `git checkout -b <branch name> <SHA1>` 在提交版本<SHA1>处创建分支
+> `git checkout -b <branch name> <SHA1>` 在提交版本`SHA1`处创建分支
 
 删除分支
 > `git branch -d <branch name>`
