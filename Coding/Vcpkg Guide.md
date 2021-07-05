@@ -40,22 +40,26 @@
 
 #### 4. 使用vcpkg
 
-搜索要安装的库
+* 搜索要安装的库
 
 > `d:/vcpkg/vcpkg.exe search <库名>`
 
-安装指定库
-
+* 安装指定库
 >  `d:/vcpkg/vcpkg.exe install <库名>:<平台版本>`  
->
 > 例 :  `.\vcpkg.exe install eigen3:x64-windows` 安装x64-windows版本的eigen3库
 
-在vscode 中使用vcpkg
+* 在vscode 中使用vcpkg
+  1. 在setting.json 中添加
+    > ```json
+    > "cmake.configureSettings": {
+    >           "CMAKE_TOOLCHAIN_FILE": "D:/CodeEnvironment/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    > }
+    > ```
+  2. 或者在CMakeLists.txt中的find_packages()之前添加这行
 
-> 在setting.json 中添加
->
-> ```json
-> "cmake.configureSettings": {
->           "CMAKE_TOOLCHAIN_FILE": "D:/CodeEnvironment/vcpkg/scripts/buildsystems/vcpkg.cmake"
-> }
-> ```
+    > ```cmake
+    > include("/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake")
+    > ```
+
+* 安装路径  
+  安装的库在路径`/path/to/vcpkg/installed/`下可以找到
