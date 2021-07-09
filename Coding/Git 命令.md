@@ -65,9 +65,9 @@
 > `git config core.quotepath false  --global`
 
 使用全局代理
-> `git config --global http.proxy "http://ip:port"`
+> `git config --global http.proxy "http://ip:port"`  
 > `git config --global https.proxy "https://ip:port"`
 
 移除代理
-> `git config --global --unset http.proxy`
+> `git config --global --unset http.proxy`  
 > `git config --global --unset https.proxy`
