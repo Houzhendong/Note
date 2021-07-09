@@ -15,7 +15,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole":true ,
+            "console": "integratedTerminal",
             "preLaunchTask": "MSVC Build" //如果只调试不生成，注释这行
         },
         {
@@ -92,7 +92,6 @@
             "label": "MSVC Build",
             "group": "build",
             "dependsOn":[
-                "msvc cmake",
                 "make"
             ],
         },
