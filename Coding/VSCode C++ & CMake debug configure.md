@@ -75,7 +75,7 @@
             "label": "make",
             "command":"cmake",
             "args": [                    
-                "--build",
+                "${command:cmake.tasksBuildCommand}",
                 "."
             ],
             "group": "build",
@@ -84,7 +84,6 @@
             "label": "g++ Build",
             "group": "build",
             "dependsOn":[
-                "g++ cmake",
                 "make"
             ],
         },
