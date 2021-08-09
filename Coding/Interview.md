@@ -7,6 +7,7 @@
     public :    公共成员，完全公开，没有访问限制。
 
     internal:   在同一命名空间内可以访问。
+
 2. Override与重载的区别  
     重载是方法的名称相同。参数或参数类型不同，进行多次重载以适应不同的需要  
 
@@ -144,9 +145,25 @@ public class Singleton
 # WPF
 1. 依赖属性的优先级
 
-    从高到底依次是：动画→绑定→本地值→自定义Style Trigger→自定义Template Trigger→自定义Style Setter→默认Style Trigger→默认Style Setter→继承值→默认值
+    **从高到底**依次是：    
+    - 系统强制值
+    - 动画
+    - 本地设置
+    - 上级元素的Template设置的值
+    - 隐式样式（Implicit Style）设置的值
+    - Style Trigger
+    - Template Trigger
+    - Style Setter
+    - Default Style
+    - 由上级元素继承而来的值
+    - 默认值
 
-2. 什么是路由事件
+2. 依赖属性的优点    
+    优化了属性的储存，减少了不必要的内存使用。
+加入了属性变化通知，限制、验证等，
+可以储存多个值，配合Expression以及Animation等，打造出更灵活的使用方式。
+
+3. 什么是路由事件
 
     1. 路由事件是那些在可视树层次结构中向上或向下移动的事件。
 WPF事件可以分为三种类型:
@@ -154,12 +171,12 @@ WPF事件可以分为三种类型:
 冒泡事件:-它们在可视树层次结构中向上移动。例如，“MouseDown”是一个冒泡事件。
 隧道事件:这些事件沿可视树层次结构下行。“PreviewKeyDown”是一个隧道事件。
     2. WPF中的路由事件是沿着VisualTree传递的，作用是用来调用应用程序的元素树上的各种监听器上的处理程序。
-    - 冒泡，这种事件处理方式是从源元素向上级流过去，直到到达根节点即顶层节点，一般为最外层的控件。
-    - 直接，这种处理方式是在源上处理，主要用在源元素上处理。通常setter和trigger中有所体现，我个人认为VisualState可视状态可能也是直接事件处理，也是依赖属性的状态改变。和Trigger有一定的重复，但是VisualState是通过生硬的动画间接实现依赖属性的改变。
-    - 隧道，又称作Preview事件，和冒泡事件处理方式相反的。元素树的根位置调用事件处理程序，依次向下直到源元素位置。
+        - 冒泡，这种事件处理方式是从事件的激发者向上级流过去，直到到达根节点即顶层节点，一般为最外层的控件。
+        - 直接，这种处理方式是在源上处理，主要用在源元素上处理。通常setter和trigger中有所体现，我个人认为VisualState可视状态可能也是直接事件处理，也是依赖属性的状态改变。和Trigger有一定的重复，但是VisualState是通过生硬的动画间接实现依赖属性的改变。
+        - 隧道，又称作Preview事件，和冒泡事件处理方式相反的。元素树的根位置调用事件处理程序，依次向下直到源元素位置。   
 隧道事件和冒泡事件一般成对出现。同一事件，执行时首先是隧道事件，然后是冒泡事件。
 
-3. WPF对象的层次结构
+4. WPF对象的层次结构
 
     `Object`: 因为WPF是用.net创建的，所以WPF UI类继承的第一个类是.net对象类。  
     `DispatcherObject`:这个类确保所有WPF UI对象只能被拥有它的线程直接访问。其他不拥有它的线程必须通过dispatcher对象。  
@@ -169,15 +186,18 @@ WPF事件可以分为三种类型:
     `FrameworkElement`:这个类支持模板、样式、绑定、资源等。
     `Control`:为自定义应用程序控件提供基础
 
-4. 视觉树 VS 逻辑树
+5. 视觉树 VS 逻辑树
 
     * 逻辑树是视觉树的子集，也就是视觉树基本上是逻辑树的一种扩展。  
     * WPF通过逻辑树来解决依赖项属性继承和资源的问题，使用视觉树来处理渲染，事件路由，资源定位等问题。
     * 逻辑树可以认为是XAML所见的，而视觉树包含了XAML元素内部的结构。
     * 逻辑树的查找可以通过LogicalTreeHelper辅助类，视觉树的查找可以通过VisualTreeHelper辅助类，其中需要注意的是对ContentElement元素的查找，无法直接通过VisualTreeHelper进行查找，ContentElement元素并不继承Visual，而ContentElement元素的使用时需要一个ContentElement载体FrameworkContentElement。
 
-0. 如何理解MVVM框架
+6. 如何理解MVVM框架
 
-    View负责定义UI的呈现和布局，接受用户数输入  
-    ViewModel是Model For View，即View的抽象结果。实现了View绑定所需要的属性和命令，并且通过通知事件告知View状态更改。ViewModel还负责协调与Model于View的交互。ViewModel通过命令绑定传递操作，通过属性绑定传递数据。  
-    Model是应用程序非视觉的抽象，包含了数据模型和业务逻辑。
+    - View负责定义UI的呈现和布局，接受用户数输入  
+    - ViewModel是Model For View，即View的抽象结果。实现了View绑定所需要的属性和命令，并且通过通知事件告知View状态更改。ViewModel还负责协调与Model于View的交互。ViewModel通过命令绑定传递操作，通过属性绑定传递数据。  
+    - Model是应用程序非视觉的抽象，包含了数据模型和业务逻辑。
+
+7. 基元素  
+    `UIElement`,`FrameworkElement`,`ContentElement`,`FrameworkContentElement`
