@@ -18,5 +18,13 @@
 > `:vs` 上下拆分
 
 
+record  
+> 记录recoring过程中的所有操作到宏，然后重复操作  
+> Step :   
+> 1. 命令模式下，按下`q` + `a-z或0-9中任意一个键`，准备开始录制宏
+> 2. 开始录入要重复的操作
+> 3. 在命令模式下按下`q`退出记录
+> 4. 按下`@` + `刚刚记录的宏键`重复录入的操作
+
 
 ![image](https://www.runoob.com/wp-content/uploads/2015/10/vi-vim-cheat-sheet-sch.gif)
