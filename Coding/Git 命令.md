@@ -60,6 +60,9 @@
 切换分支
 > `git checkout <branchname>`
 
+合并指定分支到当前分支
+> `git merge <branchName>`
+
 中文乱码配置
 
 > `git config core.quotepath false  --global`
