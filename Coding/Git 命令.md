@@ -74,3 +74,7 @@
 移除代理
 > `git config --global --unset http.proxy`  
 > `git config --global --unset https.proxy`
+
+撤销回退
+> `git reflog`  查找版本log
+> `git reset <commit id>`
