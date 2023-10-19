@@ -78,3 +78,9 @@
 撤销回退
 > `git reflog`  查找版本log
 > `git reset <commit id>`
+
+拉取远程的指定分支到本地
+> `git checkout -b test <name of remote>/test`
+
+合并多个提交
+> `git rebase -i HEAD~n`
