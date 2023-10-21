@@ -136,3 +136,11 @@ qemu-nbd -d /dev/nbd0
 * 提交更改
     > `uci commit network`
 
+## OpenWrt设置Zerotier
+1.  添加防火墙规则
+    网络 > 防火墙 > 通信规则
+    添加规则如图![Alt text](../image/Snipaste_2023-10-21_10-04-57.png)  
+    注意源区域可以选择`任意区域`， 目标区域可以选择`设备`
+2. 添加接口
+    网络 > 接口 > 添加新接口
+    接口配置如下
