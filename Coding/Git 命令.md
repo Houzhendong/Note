@@ -84,3 +84,6 @@
 
 合并多个提交
 > `git rebase -i HEAD~n`
+
+远程分支的回退
+> `git revert <commit SHA1>`  //回滚提交，会弹出commit message编辑，保存后推送至远端即可
