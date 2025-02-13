@@ -15,11 +15,10 @@ $msbuildPath = $null
 # Loop through each Visual Studio instance and try to locate MSBuild
 foreach ($vs in $vsInstances) {
     $vsInstallPath = $vs.InstallLocation
-    $temp = Join-Path -Path $vsInstallPath -ChildPath "MSBuild\Current\Bin\MSBuild.exe"
-    
+    @( "MSBuild","Current","Bin","MSBuild.exe" ) | %{ $vsInstallPath = Join-Path $vsInstallPath $_ }
     # Check if MSBuild exists in this path
-    if (Test-Path $temp) {
-        $msbuildPath = $temp
+    if (Test-Path $vsInstallPath) {
+        $msbuildPath = $vsInstallPath
         break
     }
 }
