@@ -100,3 +100,4 @@ Sources:
 * [MIcrosoft Docs | Source Generators](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview)
 * [Steve Talks Code | Debugging C# Source Generators with Visual Studio 2019 16.10](http://stevetalkscode.co.uk/debug-source-generators-with-vs2019-1610)
 * [Dotnet Source Generators in 2024](https://posts.specterops.io/dotnet-source-generators-in-2024-part-1-getting-started-76d619b633f5)
+* [Microsoft Docs | Syntax Analysis](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/get-started/syntax-analysis)
