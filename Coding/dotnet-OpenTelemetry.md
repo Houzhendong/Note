@@ -25,6 +25,8 @@ datasources:
 # otel.confg.yml 
 extensions:
   health_check:
+  otlp_encoding:
+    protocol: otlp_json
 
 receivers:
   otlp:
@@ -42,6 +44,18 @@ exporters:
     verbosity: detailed
   prometheus:
     endpoint: 0.0.0.0:8889
+  otlphttp:
+    endpoint: http://loki:3100/otlp
+  rabbitmq:
+    connection:
+      endpoint: amqp://rabbitmq:5672
+      auth:
+        plain:
+          username: guest
+          password: guest
+    encoding_extension: otlp_encoding
+    routing:
+      exchange: logs
 
 service:
 
@@ -60,9 +74,10 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug]
+      exporters: [debug, otlphttp, rabbitmq]
 
-  extensions: [health_check]
+  extensions: [health_check,otlp_encoding]
+
 
 # prometheus.yml
 global:
@@ -118,6 +133,11 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=grafana
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
   otel-collector:
     image: otel/opentelemetry-collector-contrib
     volumes:
@@ -130,6 +150,15 @@ services:
       - 4317:4317 # OTLP gRPC receiver
       - 4318:4318 # OTLP http receiver
       - 55679:55679 # zpages extension
+  rabbitmq:
+    image: rabbitmq:4.0.7-management
+    ports:
+      - '4369:4369'
+      - '5551:5551'
+      - '5552:5552'
+      - '5672:5672'
+      - '25672:25672'
+      - '15672:15672'
 volumes:
   prom_data:
 ```
@@ -147,17 +176,24 @@ volumes:
 
 ## 2. 示例代码
 ```csharp
+// See https://aka.ms/new-console-template for more information
 using System.Diagnostics.Metrics;
+using System.Reflection.PortableExecutable;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using OpenTelemetry.Logs;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Text;
+using Microsoft.Extensions.Logging;
 
 using var meterProvider = Sdk.CreateMeterProviderBuilder()
     .AddProcessInstrumentation()
     .AddRuntimeInstrumentation()
     .AddOtlpExporter(opt =>
     {
-        opt.Endpoint = new Uri("http://localhost:4317/");
+        opt.Endpoint = new Uri("http://192.168.50.6:4317/");
         opt.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
         opt.BatchExportProcessorOptions.ExporterTimeoutMilliseconds = 1000;
         opt.BatchExportProcessorOptions.ScheduledDelayMilliseconds = 1000;
@@ -165,18 +201,16 @@ using var meterProvider = Sdk.CreateMeterProviderBuilder()
     })
     .ConfigureResource(builder =>
     {
-        // codeName            |   Prometheus Lable
-        // service             |   exported_job
-        // serviceInstanceId   |   exported_instance
         builder.AddService(serviceName: "hello", autoGenerateServiceInstanceId: false, serviceInstanceId: "hello.t");
     })
     .AddEventCountersInstrumentation(config =>
     {
         config.AddEventSources(
-            //"System.Runtime",
-            "Microsoft-AspNetCore",
-            "Microsoft.AspNetCore",
-            "System.Net");
+            // "System.Runtime",
+            // "Microsoft-AspNetCore",
+            // "Microsoft.AspNetCore",
+            // "System.Net",
+            "System.Net.Sockets");
         config.RefreshIntervalSecs = 1;
     })
     .AddConsoleExporter()
@@ -184,14 +218,76 @@ using var meterProvider = Sdk.CreateMeterProviderBuilder()
     .Build();
 
 var meter = new Meter("TestMeter");
-// 如果想要自定义Lable，则需要使用tags,或者在Add时添加Lable参数
 var counter = meter.CreateCounter<int>("my_test_counter", null, null, tags: [new("job", "test_job"), new("name", "test_name")]);
+var connectionFactory = new ConnectionFactory()
+{
+    Uri = new Uri("amqp://guest:guest@localhost:5672")
+};
+
+var connection = await connectionFactory.CreateConnectionAsync();
+var channel = await connection.CreateChannelAsync();
+await channel.ExchangeDeclareAsync("logs", ExchangeType.Direct, false, true, null);
+var queueResult = await channel.QueueDeclareAsync("test-logs", true, false, false,
+    new Dictionary<string, object?>()
+    {
+        {"x-expires", 60*1000},
+    });
+await channel.QueueBindAsync(queueResult.QueueName, "logs", "otlp_logs");
+
+// List<Task> tasks = new();1
+// foreach (var i in Enumerable.Range(1, 50))
+// {
+//     var machine = $"Machine_{i}";
+//     tasks.Add(Task.Run(async () =>
+//     {
+//         var c = meter.CreateCounter<int>("machine_counter", null, null, tags: [new("machine", machine)]);
+//         var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+//         while (await timer.WaitForNextTickAsync())
+//         {
+//             c.Add(Random.Shared.Next(1, 10), [new("machine", machine)]);
+//         }
+//     }));
+// }
+var consumer = new AsyncEventingBasicConsumer(channel);
+consumer.ReceivedAsync += (model, ea) =>
+{
+    byte[] body = ea.Body.ToArray();
+    var message = Encoding.UTF8.GetString(body);
+    Console.WriteLine($" [x] {message}");
+    return Task.CompletedTask;
+};
+
+_ = channel.BasicConsumeAsync(queueResult.QueueName, autoAck: true, consumer: consumer);
+
+// await Task.WhenAll(tasks);
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddOpenTelemetry(logging =>
+    {
+        logging.AddConsoleExporter();
+        logging.AddOtlpExporter(opt =>
+        {
+            opt.Endpoint = new Uri("amqp://guest:guest@localhost:5672")
+            opt.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+            opt.BatchExportProcessorOptions.ExporterTimeoutMilliseconds = 1000;
+            opt.BatchExportProcessorOptions.ScheduledDelayMilliseconds = 1000;
+            opt.TimeoutMilliseconds = 1000;
+        });
+    });
+});
+
+var logger = loggerFactory.CreateLogger<Program>();
 
 while (true)
 {
-     counter.Add(1, [new("second_label", "label_test")]);
+    counter.Add(1, [new("second_label", "label_test")]);
+    logger.LogInformation("Random Id {id}", Guid.NewGuid());
     await Task.Delay(1000);
 }
+
+
+Console.WriteLine("Hello, World!");
+
 
 ```
 
