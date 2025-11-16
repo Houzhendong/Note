@@ -108,6 +108,155 @@ scrape_configs:
 
 ```
 
+### loki 配置
+
+```yaml
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki/data
+  storage:
+    filesystem:
+      chunks_directory: /loki/data/chunks
+      rules_directory: /loki/data/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  filesystem:
+    directory: /loki/data/tsdb
+
+limits_config:
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+
+# chunk_store_config:
+#   max_look_back_period: 0s
+
+table_manager:
+  retention_deletes_enabled: false
+  retention_period: 0s
+
+ruler:
+  alertmanager_url: http://localhost:9093
+```
+
+### init posgres 
+```sql
+-- Create otel_logs table for storing OpenTelemetry logs
+CREATE TABLE IF NOT EXISTS otel_logs (
+    log_time TIMESTAMP WITH TIME ZONE,
+    log_level VARCHAR(50),
+    message TEXT,
+    properties JSONB,
+    resources JSONB,
+    scope JSONB,
+    source_type VARCHAR(50)
+);
+
+-- Create index on timestamp for faster queries
+CREATE INDEX IF NOT EXISTS idx_otel_logs_timestamp ON otel_logs(log_time DESC);
+-- Create index on severity for filtering
+CREATE INDEX IF NOT EXISTS idx_otel_logs_severity ON otel_logs(log_level);
+-- Create index on resources (service.name) for querying by service
+CREATE INDEX IF NOT EXISTS idx_otel_logs_service ON otel_logs USING GIN(properties);
+```
+
+### vector 配置
+```yaml
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+timezone: "Asia/Shanghai"
+sources:
+  demo_logs:
+    type: demo_logs
+    interval: 1
+    format: json
+  otel:
+    type: opentelemetry
+    grpc:
+      address: 0.0.0.0:4317
+    http:
+      address: 0.0.0.0:4318
+      headers: []
+      keepalive:
+        max_connection_age_jitter_factor: 0.1
+        max_connection_age_secs: 300
+transforms:
+  sanitize_metric_names:
+    type: remap
+    inputs:
+      - otel.metrics
+    source: |-
+      # Replace dots in metric names with underscores so Prometheus accepts them
+      if exists(.name) {
+        .name = replace!(.name, ".", "_")
+      }
+      if exists(.tags) {
+        .tags = map_keys(object!(.tags), recursive: true) -> |key| { replace(key, ".", "_") }
+      }
+  rename_otel_logs:
+    type: remap
+    inputs:
+      - otel.logs
+    source: |-
+      if exists(.attributes) {
+        .properties = del(.attributes)
+      }
+
+      if exists(.timestamp) {
+        .log_time = del(.timestamp)
+      } 
+      
+      if exists(.severity_text) {
+        .log_level = del(.severity_text)
+      }
+
+      if exists(.source_type) {
+        .source_type = del(.source_type)
+      }
+
+sinks:
+  console:
+    inputs:
+      - rename_otel_logs
+      # - sanitize_metric_names
+      # - demo_logs
+    target: stdout
+    type: console
+    encoding:
+      codec: json
+  prometheus_exporter:
+    type: prometheus_exporter
+    inputs:
+      - sanitize_metric_names
+    address: 0.0.0.0:8889
+  postgres_logs:
+    type: postgres
+    inputs:
+      - rename_otel_logs
+    endpoint: "postgresql://${POSTGRES_USER}:${POSTGRES_PW}@postgres:5432/${POSTGRES_DB}"
+    table: "otel_logs"
+```
+
 ### docker-compose.yml
 ```yaml
 services:
@@ -133,11 +282,15 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=grafana
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
-  loki:
-    image: grafana/loki:latest
+    loki:
+    image: docker.io/grafana/loki:latest
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
+    restart: unless-stopped
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/loki-config.yaml
+      - loki_data:/loki/data
   otel-collector:
     image: otel/opentelemetry-collector-contrib
     volumes:
@@ -159,8 +312,47 @@ services:
       - '5672:5672'
       - '25672:25672'
       - '15672:15672'
+   postgres:
+    container_name: postgres
+    image: docker.io/postgres:latest
+    timezone: "Asia/Shanghai"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PW}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+  pgadmin:
+    container_name: pgadmin
+    image: docker.io/dpage/pgadmin4:latest
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_MAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PW}
+    ports:
+      - "5050:80"
+    restart: always
+  vector:
+    container_name: vector
+    image: timberio/vector:latest-alpine
+    volumes:
+      - ./vector/vector.yaml:/etc/vector/vector.yaml:ro
+    environment:
+      - VECTOR_LOG=info
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PW=${POSTGRES_PW}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "9598:9598" # Vector metrics API
+      - "4317:4317" # OTLP gRPC
+      - "8889:8889" # Prometheus metrics exporter
+    entrypoint: "vector --config /etc/vector/vector.yaml"
+    restart: unless-stopped
 volumes:
   prom_data:
+  loki_data:
 ```
 
 # C#代码
